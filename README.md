@@ -1,6 +1,6 @@
 # Instruct-Lite
 
-A lightweight framework for instruction tuning and working with Large Language Models (LLMs).
+A lightweight model for instruction tuning and working with Large Language Models (LLMs).
 
 ## Overview
 
