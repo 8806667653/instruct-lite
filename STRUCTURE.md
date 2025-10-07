@@ -27,6 +27,10 @@ instruct-lite/
 │   │   ├── generate.py    # Text generation functions
 │   │   └── graph.py       # Plotting utilities
 │   │
+│   ├── formatter/          # Prompt formatting utilities (NEW)
+│   │   ├── format.py      # Advanced prompt formatters
+│   │   └── README.md      # Formatter documentation
+│   │
 │   ├── rag/                # RAG (Retrieval-Augmented Generation)
 │   │   ├── retriever.py   # FAISS-based document retriever
 │   │   ├── rag_dataset.py # RAG dataset handling
