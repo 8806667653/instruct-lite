@@ -7,8 +7,19 @@ from . import model
 from . import loader
 from . import finetune
 from . import formatter
-from . import rag
 from . import utils
 
-__all__ = ["model", "loader", "finetune", "formatter", "rag", "utils"]
+# Optional RAG module (requires faiss)
+try:
+    from . import rag
+    __all__ = ["model", "loader", "finetune", "formatter", "rag", "utils", "experiment"]
+except ImportError:
+    # RAG module not available (faiss not installed)
+    __all__ = ["model", "loader", "finetune", "formatter", "utils", "experiment"]
+
+# Optional experiment module
+try:
+    from . import experiment
+except ImportError:
+    pass
 
