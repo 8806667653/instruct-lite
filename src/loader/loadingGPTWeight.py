@@ -10,9 +10,37 @@ def assign(left, right):
     return torch.nn.Parameter(torch.tensor(right))
 
 
+def assign_wpe(left, right):
+    """
+    Assign positional embeddings (wpe) allowing different context lengths.
+    - If model context_length < checkpoint length: slice checkpoint to fit.
+    - If model context_length > checkpoint length: pad by repeating last row.
+    """
+    left_h, left_w = left.shape
+    right_h, right_w = right.shape
+    if left_w != right_w:
+        raise ValueError(
+            f"Embedding width mismatch for wpe. Left: {(left_h, left_w)}, Right: {(right_h, right_w)}"
+        )
+    if left_h == right_h:
+        adapted = right
+    elif left_h < right_h:
+        # Truncate checkpoint positions to fit the model's context length
+        adapted = right[:left_h]
+        print(f"[load_weights_into_gpt] Truncated wpe from {right_h} to {left_h} positions to match model context_length.")
+    else:
+        # Pad by repeating the last positional embedding
+        pad_rows = left_h - right_h
+        last_row = right[-1][None, :]
+        adapted = np.concatenate([right, np.repeat(last_row, pad_rows, axis=0)], axis=0)
+        print(f"[load_weights_into_gpt] Padded wpe from {right_h} to {left_h} positions to match model context_length.")
+    return torch.nn.Parameter(torch.tensor(adapted))
+
+
 
 def load_weights_into_gpt(gpt, params):           #1
-    gpt.pos_emb.weight = assign(gpt.pos_emb.weight, params['wpe'])
+    # Allow context_length changes by adapting positional embeddings
+    gpt.pos_emb.weight = assign_wpe(gpt.pos_emb.weight, params['wpe'])
     gpt.tok_emb.weight = assign(gpt.tok_emb.weight, params['wte'])
 
     for b in range(len(params["blocks"])):     #2

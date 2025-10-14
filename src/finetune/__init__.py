@@ -2,6 +2,7 @@
 
 from .training import (
     train_model_simple,
+    train_model_with_checkpoints,
     train_classifier_simple,
     evaluate_model,
     evaluate_model_classification,
@@ -24,6 +25,7 @@ from .graph import plot_losses, plot_values
 
 __all__ = [
     "train_model_simple",
+    "train_model_with_checkpoints",
     "train_classifier_simple",
     "evaluate_model",
     "evaluate_model_classification",
