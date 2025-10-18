@@ -11,6 +11,10 @@ pandas >= 2.2.1            # for experiment comparison and analysis
 psutil >= 5.9.5            # already installed automatically as dependency of torch
 pyyaml >= 6.0              # for experiment configuration management
 
+# OpenAI API for model evaluation and testing
+openai >= 1.0.0              # for OpenAI API integration
+requests >= 2.31.0           # HTTP library for API calls
+
 # Optional dependencies for RAG functionality (uncomment if needed)
 # faiss-cpu >= 1.7.4       # for RAG retrieval (CPU version)
 # OR
