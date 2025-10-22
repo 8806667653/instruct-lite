@@ -12,7 +12,7 @@ def _ensure_dir(path):
     return path
 
 
-def _save_checkpoint(checkpoint_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses):
+def _save_checkpoint(checkpoint_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses, track_tokens_seen=None):
     checkpoint = {
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict() if optimizer is not None else None,
@@ -21,6 +21,7 @@ def _save_checkpoint(checkpoint_path, model, optimizer, epoch, global_step, toke
         "tokens_seen": tokens_seen,
         "train_losses": train_losses,
         "val_losses": val_losses,
+        "track_tokens_seen": track_tokens_seen if track_tokens_seen is not None else [],
         "saved_at": time.time(),
     }
     torch.save(checkpoint, checkpoint_path)
@@ -37,6 +38,7 @@ def _load_checkpoint(checkpoint_file, model, optimizer):
         int(ckpt.get("tokens_seen", 0)),
         ckpt.get("train_losses", []),
         ckpt.get("val_losses", []),
+        ckpt.get("track_tokens_seen", []),
     )
 
 
@@ -112,9 +114,10 @@ def train_model_with_checkpoints(model, train_loader, val_loader,
 
     if resume_from:
         try:
-            start_epoch, global_step, tokens_seen, prev_train_losses, prev_val_losses = _load_checkpoint(resume_from, model, optimizer)
+            start_epoch, global_step, tokens_seen, prev_train_losses, prev_val_losses, prev_track_tokens_seen = _load_checkpoint(resume_from, model, optimizer)
             train_losses.extend(prev_train_losses)
             val_losses.extend(prev_val_losses)
+            track_tokens_seen.extend(prev_track_tokens_seen)
             start_epoch = max(0, min(start_epoch, num_epochs - 1))
         except FileNotFoundError:
             start_epoch = 0
@@ -146,7 +149,7 @@ def train_model_with_checkpoints(model, train_loader, val_loader,
                 if checkpoint_dir and checkpoint_freq_steps and checkpoint_freq_steps > 0:
                     if global_step >= 0 and (global_step % checkpoint_freq_steps == 0):
                         ckpt_path = os.path.join(checkpoint_dir, f"ckpt_step{global_step}.pt")
-                        _save_checkpoint(ckpt_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses)
+                        _save_checkpoint(ckpt_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses, track_tokens_seen)
                         last_checkpoints.append(ckpt_path)
                         if keep_last_k and len(last_checkpoints) > keep_last_k:
                             to_remove = last_checkpoints.pop(0)
@@ -159,7 +162,7 @@ def train_model_with_checkpoints(model, train_loader, val_loader,
 
             if checkpoint_dir:
                 ckpt_path = os.path.join(checkpoint_dir, f"ckpt_epoch{epoch+1}_step{global_step}.pt")
-                _save_checkpoint(ckpt_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses)
+                _save_checkpoint(ckpt_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses, track_tokens_seen)
                 last_checkpoints.append(ckpt_path)
                 if keep_last_k and len(last_checkpoints) > keep_last_k:
                     to_remove = last_checkpoints.pop(0)
@@ -172,7 +175,7 @@ def train_model_with_checkpoints(model, train_loader, val_loader,
         if checkpoint_dir:
             emergency_path = os.path.join(checkpoint_dir, f"interrupted_step{global_step}.pt")
             print(f"Interrupted. Saving checkpoint to {emergency_path}")
-            _save_checkpoint(emergency_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses)
+            _save_checkpoint(emergency_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses, track_tokens_seen)
         # Gracefully return partial training stats instead of raising
         return train_losses, val_losses, track_tokens_seen
     except RuntimeError as e:
@@ -181,7 +184,7 @@ def train_model_with_checkpoints(model, train_loader, val_loader,
             if checkpoint_dir:
                 emergency_path = os.path.join(checkpoint_dir, f"oom_step{global_step}.pt")
                 print(f"CUDA OOM encountered. Saving checkpoint to {emergency_path}")
-                _save_checkpoint(emergency_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses)
+                _save_checkpoint(emergency_path, model, optimizer, epoch, global_step, tokens_seen, train_losses, val_losses, track_tokens_seen)
             print("Returning partial metrics after OOM. Consider reducing batch size or sequence length.")
             return train_losses, val_losses, track_tokens_seen
         raise
