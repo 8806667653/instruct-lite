@@ -40,7 +40,7 @@ def assign_wpe(left, right):
 
 def load_weights_into_gpt(gpt, params):           #1
     # Allow context_length changes by adapting positional embeddings
-    gpt.pos_emb.weight = assign_wpe(gpt.pos_emb.weight, params['wpe'])
+    gpt.pos_emb.weight = assign(gpt.pos_emb.weight, params['wpe'])
     gpt.tok_emb.weight = assign(gpt.tok_emb.weight, params['wte'])
 
     for b in range(len(params["blocks"])):     #2
